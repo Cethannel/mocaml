@@ -17,7 +17,20 @@ and expression =
       ; operator : Token.t
       ; right : expression
       }
-  | NoneTemp
+  | Boolean of bool
+  | If of
+      { condition : expression
+      ; consequence : block
+      ; alternative : block option
+      }
+  | FunctionLiteral of
+      { parameters : identifier list
+      ; body : block
+      }
+  | Call of {
+    fn: expression;
+    args: expression list
+    }
 [@@deriving show { with_path = false }, sexp]
 
 and statement =
@@ -30,6 +43,7 @@ and statement =
 [@@deriving show { with_path = false }, sexp]
 
 and identifier = { identifier : string } [@@deriving sexp]
+and block = { block : statement list }
 and program = { statements : statement list }
 
 let token_literal = function
