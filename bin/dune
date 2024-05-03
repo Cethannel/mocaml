@@ -1,0 +1,4 @@
+(executable
+ (public_name mocaml)
+ (name main)
+ (libraries mocaml stdio base))
