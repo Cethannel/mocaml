@@ -27,10 +27,10 @@ and expression =
       { parameters : identifier list
       ; body : block
       }
-  | Call of {
-    fn: expression;
-    args: expression list
-    }
+  | Call of
+      { fn : expression
+      ; args : expression list
+      }
 [@@deriving show { with_path = false }, sexp]
 
 and statement =
@@ -40,6 +40,7 @@ and statement =
       }
   | Return of expression
   | ExpressionStatement of expression
+  | BlockStatement of block
 [@@deriving show { with_path = false }, sexp]
 
 and identifier = { identifier : string } [@@deriving sexp]

@@ -358,7 +358,7 @@ let string_of_statement = function
       (Ast.show_expression stmt.value)
   | Return expr -> Fmt.str "RETURN %s" (Ast.show_expression expr)
   | ExpressionStatement expr -> Fmt.str "EXPR: %s;" (Ast.show_expression expr)
-(*  | BlockStatement _ -> assert false*)
+  | BlockStatement _ -> assert false
 
 and string_of_ident ident = Ast.(ident.identifier)
 
