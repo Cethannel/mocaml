@@ -7,6 +7,7 @@ type t =
   | Boolean of bool
   | Return of t
   | Function of func
+  | String of string
   | Null
 [@@deriving show { with_path = false }]
 

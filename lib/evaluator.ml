@@ -63,6 +63,7 @@ and eval_block block env =
 and eval_expr expr env =
   match expr with
   | Ast.Integer int -> Ok (Object.Integer int)
+  | Ast.String str -> Ok (Object.String str)
   | Ast.Boolean true -> Ok monkey_true
   | Ast.Boolean false -> Ok monkey_false
   | Ast.Identifier identifier -> eval_identifier identifier env
@@ -116,6 +117,7 @@ and eval_minus right =
 and eval_infix operator left right =
   match operator, left, right with
   | _, Integer left, Integer right -> eval_integer_infix operator left right
+  | _, String left, String right -> eval_string_infix operator left right
   | Token.EQ, left, right -> Ok (Boolean (phys_equal left right))
   | Token.NOT_EQ, left, right -> Ok (Boolean (not @@ phys_equal left right))
   | _, left, right ->
@@ -138,6 +140,11 @@ and eval_integer_infix operator left right =
   | Token.EQ -> make_bool Stdlib.( = )
   | Token.NOT_EQ -> make_bool Stdlib.( != )
   | tok -> Fmt.error "unexpected int infix op: %a" Token.pp tok
+
+and eval_string_infix operator left right =
+  match operator with
+  | Token.PLUS -> Ok ( Object.String ( left ^ right ) )
+  | tok -> Fmt.error "unexpected string infix op: %a" Token.pp tok
 
 and eval_identifier identifier env =
   match Environment.get env identifier.identifier with
@@ -183,12 +190,12 @@ module Test = struct
     | Error msg -> Fmt.failwith "%s" msg
   ;;
 
-  (*let expect_str input =
+  let expect_str input =
     match eval_input input with
     | Ok (String str) -> Fmt.pr "%s\n" str
     | Ok expr -> Fmt.pr "WRONG TYPES: %s@." (Object.show expr)
     | Error msg -> Fmt.failwith "%s" msg
-    ;;*)
+  ;;
 
   let expect_err input =
     match eval_input input with
@@ -279,5 +286,17 @@ module Test = struct
       5
       50
       true |}]
+  ;;
+
+  let%expect_test "string literal" =
+    expect_str {|"Hello World!"|};
+    [%expect {|
+    Hello World! |}]
+  ;;
+
+  let%expect_test "string concat" =
+    expect_str {|"Hello" + " " + "World!"|};
+    [%expect {|
+    Hello World! |}]
   ;;
 end

@@ -28,6 +28,7 @@ type t =
   | FALSE
   | EQ
   | NOT_EQ
+  | STRING of string
 [@@deriving compare, sexp, equal, show]
 
 let empty = Map.empty (module String)

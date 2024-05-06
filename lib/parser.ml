@@ -175,6 +175,7 @@ and parse_prefix_expression parser =
   match token with
   | Token.IDENT _ -> expr_parse_ident parser |> map_parser
   | Token.INT _ -> expr_parse_integer parser |> map_parser
+  | Token.STRING _ -> expr_parse_string parser |> map_parser
   | Token.IF -> expr_parse_if parser
   | Token.FUNCTION -> expr_parse_function parser
   | Token.TRUE | Token.FALSE -> expr_parse_bool parser token
@@ -254,6 +255,11 @@ and expr_parse_ident parser =
   match parser.cur_token with
   | Some (Token.IDENT identifier) -> Ok (Ast.Identifier { identifier })
   | _ -> Error "missing ident"
+
+and expr_parse_string parser =
+  match parser.cur_token with
+  | Some (Token.STRING str) -> Ok (Ast.String str)
+  | _ -> Error "missing number"
 
 and expr_parse_integer parser =
   match parser.cur_token with
@@ -561,5 +567,14 @@ let b = 32143;
       LET: let { identifier = "x" } = Call {fn = (Identifier { identifier = "single" });
       args = [(Identifier { identifier = "a" })]}
     ] |}]
+  ;;
+
+  let%expect_test "string literals" =
+    expect_program {|"hello world"|};
+    [%expect {|
+    Program: [
+      EXPR: (String "hello world");
+    ]
+    |}]
   ;;
 end

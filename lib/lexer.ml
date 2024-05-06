@@ -68,6 +68,13 @@ let read_int lex =
     | None -> false)
 ;;
 
+let read_string lex =
+  let lex = read_char lex in
+  read_while lex ~fn:(function
+    | Some ch -> not @@ Char.equal ch '"'
+    | None -> false)
+;;
+
 let peek_char lex = List.nth (String.to_list lex.input) lex.readPosition
 
 let next_token lex =
@@ -83,6 +90,9 @@ let next_token lex =
       (match peek_char lex with
        | Some '=' -> read_char lex, Token.NOT_EQ
        | _ -> lex, Token.BANG)
+    | Some '"' ->
+      let lex, str = read_string lex in
+      lex, Token.STRING str
     | Some '-' -> lex, Token.MINUS
     | Some '/' -> lex, Token.SLASH
     | Some '*' -> lex, Token.ASTERISK
@@ -155,6 +165,8 @@ let%test_unit "next token" =
 
     10 == 10;
     10 != 9;
+    "foobar"
+    "foo bar"
     |}
   in
   let expected =
@@ -231,6 +243,8 @@ let%test_unit "next token" =
     ; Token.NOT_EQ
     ; Token.INT "9"
     ; Token.SEMICOLON
+    ; Token.STRING "foobar"
+    ; Token.STRING "foo bar"
     ; Token.EOF
     ]
   in

@@ -28,6 +28,7 @@ type t =
   | FALSE
   | EQ
   | NOT_EQ
+  | STRING of string
 
 val equal : t -> t -> bool
 val show : t -> string

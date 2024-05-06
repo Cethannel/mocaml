@@ -31,6 +31,7 @@ and expression =
       { fn : expression
       ; args : expression list
       }
+  | String of string
 [@@deriving show { with_path = false }, sexp]
 
 and statement =
