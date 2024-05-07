@@ -102,6 +102,7 @@ let next_token lex =
     | Some ')' -> lex, Token.RPAREN
     | Some ',' -> lex, Token.COMMA
     | Some '+' -> lex, Token.PLUS
+    | Some ':' -> lex, Token.COLON
     | Some '{' -> lex, Token.LBRACE
     | Some '}' -> lex, Token.RBRACE
     | Some '[' -> lex, Token.LBRACKET
@@ -170,6 +171,7 @@ let%test_unit "next token" =
     "foobar"
     "foo bar"
     [1, 2];
+    {"foo": "bar"}
     |}
   in
   let expected =
@@ -254,6 +256,11 @@ let%test_unit "next token" =
     ; INT "2"
     ; RBRACKET
     ; SEMICOLON
+    ; LBRACE
+    ; STRING "foo"
+    ; COLON
+    ; STRING "bar"
+    ; RBRACE
     ; EOF
     ]
   in

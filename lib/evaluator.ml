@@ -13,6 +13,11 @@ let obj_is_truthy obj =
   | _ -> true
 ;;
 
+let obj_equal a b =
+  let ( = ) = Stdlib.( = ) in
+  a = b
+;;
+
 let some_or_null obj =
   match obj with
   | Some obj -> obj
@@ -45,6 +50,10 @@ let builtins =
   @@ builtin_fn (function
     | [ Array arr; obj ] -> Ok (Array (arr @ [ obj ]))
     | _ -> Error "rest: must be an array");
+  Environment.set env "puts"
+  @@ builtin_fn (fun args ->
+    List.iter args ~f:(fun arg -> Fmt.pr "%a@." Object.pp arg);
+    Ok Null);
   env
 ;;
 
@@ -145,6 +154,20 @@ and eval_expr expr env =
         ~finish:(fun elts -> Ok (List.rev elts))
     in
     Ok (Object.Array exprs)
+  | Ast.Hash hash ->
+    let* elements =
+      List.fold_until
+        hash
+        ~init:[]
+        ~f:(fun accum (key, value) ->
+          let key = eval_expr key env in
+          let value = eval_expr value env in
+          match key, value with
+          | Ok key, Ok value -> Continue ((key, value) :: accum)
+          | _ -> Stop (Error "failed to eval"))
+        ~finish:(fun elts -> Ok (List.rev elts))
+    in
+    Ok (Object.Hash elements)
   | Ast.Index { left; index } ->
     let* left = eval_expr left env in
     let* right = eval_expr index env in
@@ -154,6 +177,10 @@ and eval_expr expr env =
         | Some obj -> Ok obj
         | None -> Ok Object.Null)
      | Array _, _ -> Error "not a valid array index"
+     | Hash hash, obj ->
+       (match List.find hash ~f:(fun (key, _) -> obj_equal key obj) with
+        | Some (_, value) -> Ok value
+        | None -> Ok Null)
      | left, _ -> Fmt.error "not a valid list: %a" Object.pp left)
   | expr -> Fmt.error "unhandled expr: %s" (Ast.show_expression expr)
 
@@ -404,5 +431,41 @@ module Test = struct
       5
       4
       4 |}]
+  ;;
+
+  let%expect_test "hashes" =
+    expect_int {| let x = { "hello": true, 5: 5 }; x[5]; |};
+    expect_bool {| let x = { true: false, 5: 5 }; x[true]; |};
+    expect_bool {| let x = { "hello": true, 5: 5 }; x["hello"]; |};
+    [%expect {|
+      5
+      false
+      true |}]
+  ;;
+
+   let%expect_test "puts" =
+    eval_input
+      {|
+      puts(5);
+      puts("hello world");
+      puts([1, 2, 3]);
+      puts(fn(x) { x + x });
+    |}
+    |> ignore;
+    [%expect
+      {|
+      (Integer 5)
+      (String "hello world")
+      (Array [(Integer 1); (Integer 2); (Integer 3)])
+      (Function
+         { parameters = [{ identifier = "x" }];
+           body =
+           { block =
+             [(ExpressionStatement
+                 Infix {left = (Identifier { identifier = "x" });
+                   operator = Token.PLUS; right = (Identifier { identifier = "x" })})
+               ]
+             };
+           env = <opaque> }) |}]
   ;;
 end

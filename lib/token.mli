@@ -31,6 +31,7 @@ type t =
   | EQ
   | NOT_EQ
   | STRING of string
+  | COLON
 
 val equal : t -> t -> bool
 val show : t -> string

@@ -130,6 +130,12 @@ let expect_rbracket parser =
     | _ -> false)
 ;;
 
+let expect_colon parser =
+  expect_peek parser (function
+    | Token.COLON -> true
+    | _ -> false)
+;;
+
 let peek_is_semi parser =
   match parser.peek_token with
   | Some Token.SEMICOLON -> true
@@ -188,6 +194,7 @@ and parse_prefix_expression parser =
   | Token.TRUE | Token.FALSE -> expr_parse_bool parser token
   | Token.LPAREN -> expr_parse_grouped parser
   | Token.LBRACKET -> expr_parse_array parser
+  | Token.LBRACE -> expr_parse_hash_literal parser
   | Token.BANG | Token.MINUS -> expr_parse_prefix parser token
   | tok ->
     Error (Fmt.str "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
@@ -260,6 +267,24 @@ and expr_parse_grouped parser =
 and expr_parse_array parser =
   parse_list_of_exprs parser ~close:Token.RBRACKET ~final:(fun exprs ->
     Ast.Array exprs)
+
+and expr_parse_hash_literal parser =
+  let rec parse' parser exprs =
+    let empty = List.length exprs = 0 in
+    match parser.peek_token with
+    | Some Token.RBRACE -> Ok (advance parser, Ast.Hash (List.rev exprs))
+    | _ when empty -> parse_key_value parser exprs
+    | Some Token.COMMA when not empty -> parse_key_value (advance parser) exprs
+    | _ -> Error "unexpected next token"
+  and parse_key_value parser exprs =
+    let parser = advance parser in
+    let* parser, key = parse_expression parser `Lowest in
+    let* parser = expect_colon parser in
+    let parser = advance parser in
+    let* parser, value = parse_expression parser `Lowest in
+    parse' parser ((key, value) :: exprs)
+  in
+  parse' parser []
 
 and expr_parse_bool parser bool =
   let* bool =
@@ -619,6 +644,21 @@ let b = 32143;
         EXPR: Index {left = (Array [(Integer 1); (Integer 2); (Integer 3)]);
         index =
         Infix {left = (Integer 1); operator = Token.PLUS; right = (Integer 1)}};
+      ] |}]
+  ;;
+
+  let%expect_test "hash literals" =
+    expect_program "{};";
+    expect_program "{ 1: true, \"hello\": 17, true: false };";
+    [%expect
+      {|
+      Program: [
+        EXPR: (Hash []);
+      ]
+      Program: [
+        EXPR: (Hash
+         [((Integer 1), (Boolean true)); ((String "hello"), (Integer 17));
+           ((Boolean true), (Boolean false))]);
       ] |}]
   ;;
 end

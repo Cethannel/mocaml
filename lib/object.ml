@@ -8,6 +8,7 @@ type t =
   | Builtin of builtin
   | String of string
   | Array of t list
+  | Hash of (t * t) list
   | Null
 [@@deriving show { with_path = false }]
 

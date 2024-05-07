@@ -37,6 +37,7 @@ and expression =
       { left : expression
       ; index : expression
       }
+  | Hash of (expression * expression) list
 [@@deriving show { with_path = false }, sexp]
 
 and statement =

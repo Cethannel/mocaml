@@ -31,6 +31,7 @@ type t =
   | EQ
   | NOT_EQ
   | STRING of string
+  | COLON
 [@@deriving compare, sexp, equal, show]
 
 let empty = Map.empty (module String)
