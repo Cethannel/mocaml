@@ -19,6 +19,8 @@ type t =
   | RPAREN
   | LBRACE
   | RBRACE
+  | LBRACKET
+  | RBRACKET
   | FUNCTION
   | LET
   | IF

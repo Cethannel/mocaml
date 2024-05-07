@@ -7,6 +7,7 @@ type t =
   | Function of func
   | Builtin of builtin
   | String of string
+  | Array of t list
   | Null
 [@@deriving show { with_path = false }]
 

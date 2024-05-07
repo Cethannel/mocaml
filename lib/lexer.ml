@@ -104,6 +104,8 @@ let next_token lex =
     | Some '+' -> lex, Token.PLUS
     | Some '{' -> lex, Token.LBRACE
     | Some '}' -> lex, Token.RBRACE
+    | Some '[' -> lex, Token.LBRACKET
+    | Some ']' -> lex, Token.RBRACKET
     | Some ch when is_letter ch ->
       let lex, str = read_ident lex in
       lex, Token.ident str
@@ -167,85 +169,92 @@ let%test_unit "next token" =
     10 != 9;
     "foobar"
     "foo bar"
+    [1, 2];
     |}
   in
   let expected =
     [ Token.LET
-    ; Token.IDENT "five"
-    ; Token.ASSIGN
-    ; Token.INT "5"
-    ; Token.SEMICOLON
-    ; Token.LET
-    ; Token.IDENT "ten"
-    ; Token.ASSIGN
-    ; Token.INT "10"
-    ; Token.SEMICOLON
-    ; Token.LET
-    ; Token.IDENT "add"
-    ; Token.ASSIGN
-    ; Token.FUNCTION
-    ; Token.LPAREN
-    ; Token.IDENT "x"
-    ; Token.COMMA
-    ; Token.IDENT "y"
-    ; Token.RPAREN
-    ; Token.LBRACE
-    ; Token.IDENT "x"
-    ; Token.PLUS
-    ; Token.IDENT "y"
-    ; Token.SEMICOLON
-    ; Token.RBRACE
-    ; Token.SEMICOLON
-    ; Token.LET
-    ; Token.IDENT "result"
-    ; Token.ASSIGN
-    ; Token.IDENT "add"
-    ; Token.LPAREN
-    ; Token.IDENT "five"
-    ; Token.COMMA
-    ; Token.IDENT "ten"
-    ; Token.RPAREN
-    ; Token.SEMICOLON
-    ; Token.BANG
-    ; Token.MINUS
-    ; Token.SLASH
-    ; Token.ASTERISK
-    ; Token.INT "5"
-    ; Token.SEMICOLON
-    ; Token.INT "5"
-    ; Token.LT
-    ; Token.INT "10"
-    ; Token.GT
-    ; Token.INT "5"
-    ; Token.SEMICOLON
-    ; Token.IF
-    ; Token.LPAREN
-    ; Token.INT "5"
-    ; Token.LT
-    ; Token.INT "10"
-    ; Token.RPAREN
-    ; Token.LBRACE
-    ; Token.RETURN
-    ; Token.TRUE
-    ; Token.SEMICOLON
-    ; Token.RBRACE
-    ; Token.ELSE
-    ; Token.LBRACE
-    ; Token.RETURN
-    ; Token.FALSE
-    ; Token.SEMICOLON
-    ; Token.RBRACE
-    ; Token.INT "10"
-    ; Token.EQ
-    ; Token.INT "10"
-    ; Token.SEMICOLON
-    ; Token.INT "10"
-    ; Token.NOT_EQ
-    ; Token.INT "9"
-    ; Token.SEMICOLON
-    ; Token.STRING "foobar"
-    ; Token.STRING "foo bar"
-    ; Token.EOF
+    ; IDENT "five"
+    ; ASSIGN
+    ; INT "5"
+    ; SEMICOLON
+    ; LET
+    ; IDENT "ten"
+    ; ASSIGN
+    ; INT "10"
+    ; SEMICOLON
+    ; LET
+    ; IDENT "add"
+    ; ASSIGN
+    ; FUNCTION
+    ; LPAREN
+    ; IDENT "x"
+    ; COMMA
+    ; IDENT "y"
+    ; RPAREN
+    ; LBRACE
+    ; IDENT "x"
+    ; PLUS
+    ; IDENT "y"
+    ; SEMICOLON
+    ; RBRACE
+    ; SEMICOLON
+    ; LET
+    ; IDENT "result"
+    ; ASSIGN
+    ; IDENT "add"
+    ; LPAREN
+    ; IDENT "five"
+    ; COMMA
+    ; IDENT "ten"
+    ; RPAREN
+    ; SEMICOLON
+    ; BANG
+    ; MINUS
+    ; SLASH
+    ; ASTERISK
+    ; INT "5"
+    ; SEMICOLON
+    ; INT "5"
+    ; LT
+    ; INT "10"
+    ; GT
+    ; INT "5"
+    ; SEMICOLON
+    ; IF
+    ; LPAREN
+    ; INT "5"
+    ; LT
+    ; INT "10"
+    ; RPAREN
+    ; LBRACE
+    ; RETURN
+    ; TRUE
+    ; SEMICOLON
+    ; RBRACE
+    ; ELSE
+    ; LBRACE
+    ; RETURN
+    ; FALSE
+    ; SEMICOLON
+    ; RBRACE
+    ; INT "10"
+    ; EQ
+    ; INT "10"
+    ; SEMICOLON
+    ; INT "10"
+    ; NOT_EQ
+    ; INT "9"
+    ; SEMICOLON
+    ; STRING "foobar"
+    ; STRING "foo bar"
+    ; LBRACKET
+    ; INT "1"
+    ; COMMA
+    ; INT "2"
+    ; RBRACKET
+    ; SEMICOLON
+    ; EOF
     ]
   in
   let lexer = new_lex input in

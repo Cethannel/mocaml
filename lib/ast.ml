@@ -32,6 +32,11 @@ and expression =
       ; args : expression list
       }
   | String of string
+  | Array of expression list
+  | Index of
+      { left : expression
+      ; index : expression
+      }
 [@@deriving show { with_path = false }, sexp]
 
 and statement =

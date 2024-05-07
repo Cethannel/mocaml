@@ -25,6 +25,7 @@ let get_precendence = function
   | Token.SLASH -> `Product
   | Token.ASTERISK -> `Product
   | Token.LPAREN -> `Call
+  | Token.LBRACKET -> `Index
   | _ -> `Lowest
 ;;
 
@@ -123,6 +124,12 @@ let expect_rbrace parser =
     | _ -> false)
 ;;
 
+let expect_rbracket parser =
+  expect_peek parser (function
+    | Token.RBRACKET -> true
+    | _ -> false)
+;;
+
 let peek_is_semi parser =
   match parser.peek_token with
   | Some Token.SEMICOLON -> true
@@ -180,6 +187,7 @@ and parse_prefix_expression parser =
   | Token.FUNCTION -> expr_parse_function parser
   | Token.TRUE | Token.FALSE -> expr_parse_bool parser token
   | Token.LPAREN -> expr_parse_grouped parser
+  | Token.LBRACKET -> expr_parse_array parser
   | Token.BANG | Token.MINUS -> expr_parse_prefix parser token
   | tok ->
     Error (Fmt.str "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
@@ -196,6 +204,7 @@ and get_infix_fn parser =
   | Some LT
   | Some GT -> Some parse_infix_expression
   | Some LPAREN -> Some parse_call_expression
+  | Some LBRACKET -> Some parse_index_expression
   | _ -> None
 
 and parse_infix_expression parser left =
@@ -208,6 +217,12 @@ and parse_infix_expression parser left =
 and parse_call_expression parser fn =
   parse_list_of_exprs parser ~close:Token.RPAREN ~final:(fun args ->
     Ast.Call { fn; args })
+
+and parse_index_expression parser left =
+  let parser = advance parser in
+  let* parser, index = parse_expression parser `Lowest in
+  let* parser = expect_rbracket parser in
+  Ok (parser, Ast.Index { left; index })
 
 and parse_list_of_exprs parser ~close ~final =
   let rec parse_list_of_exprs' parser exprs =
@@ -241,6 +256,10 @@ and expr_parse_grouped parser =
   let* parser, expr = parse_expression parser `Lowest in
   let* parser = expect_rparen parser in
   Ok (parser, expr)
+
+and expr_parse_array parser =
+  parse_list_of_exprs parser ~close:Token.RBRACKET ~final:(fun exprs ->
+    Ast.Array exprs)
 
 and expr_parse_bool parser bool =
   let* bool =
@@ -576,5 +595,30 @@ let b = 32143;
       EXPR: (String "hello world");
     ]
     |}]
+  ;;
+
+  let%expect_test "array parse" =
+    expect_program "[1, 2, fn (x) { x }];";
+    [%expect
+      {|
+      Program: [
+        EXPR: (Array
+         [(Integer 1); (Integer 2);
+           FunctionLiteral {parameters = [{ identifier = "x" }];
+             body =
+             { block = [(ExpressionStatement (Identifier { identifier = "x" }))] }}
+           ]);
+      ] |}]
+  ;;
+
+  let%expect_test "indexing" =
+    expect_program "[1, 2, 3][1 + 1];";
+    [%expect
+      {|
+      Program: [
+        EXPR: Index {left = (Array [(Integer 1); (Integer 2); (Integer 3)]);
+        index =
+        Infix {left = (Integer 1); operator = Token.PLUS; right = (Integer 1)}};
+      ] |}]
   ;;
 end

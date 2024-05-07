@@ -13,14 +13,38 @@ let obj_is_truthy obj =
   | _ -> true
 ;;
 
+let some_or_null obj =
+  match obj with
+  | Some obj -> obj
+  | None -> Object.Null
+;;
+
 let builtins =
   let open Object in
   let env = Environment.init () in
   Environment.set env "len"
   @@ builtin_fn (function
     | [ String str ] -> Ok (Integer (String.length str))
+    | [ Array arr ] -> Ok (Integer (List.length arr))
     | args when List.length args > 1 -> Error "must only pass one arg to len"
     | _ -> Fmt.error "bad type passed to len");
+  Environment.set env "first"
+  @@ builtin_fn (function
+    | [ Array arr ] -> Ok (List.hd arr |> some_or_null)
+    | _ -> Error "first: must be an array");
+  Environment.set env "last"
+  @@ builtin_fn (function
+    | [ Array arr ] -> Ok (List.last arr |> some_or_null)
+    | _ -> Error "last: must be an array");
+  Environment.set env "rest"
+  @@ builtin_fn (function
+    | [ Array (_ :: rest) ] -> Ok (Array rest)
+    | [ Array _ ] -> Ok Null
+    | _ -> Error "rest: must be an array");
+  Environment.set env "push"
+  @@ builtin_fn (function
+    | [ Array arr; obj ] -> Ok (Array (arr @ [ obj ]))
+    | _ -> Error "rest: must be an array");
   env
 ;;
 
@@ -109,6 +133,28 @@ and eval_expr expr env =
         ~finish:(fun elts -> Ok (List.rev elts))
     in
     apply_function fn args
+  | Ast.Array exprs ->
+    let* exprs =
+      List.fold_until
+        exprs
+        ~init:[]
+        ~f:(fun accum arg ->
+          match eval_expr arg env with
+          | Ok arg -> Continue (arg :: accum)
+          | _ -> Stop (Error "failed to eval somethin"))
+        ~finish:(fun elts -> Ok (List.rev elts))
+    in
+    Ok (Object.Array exprs)
+  | Ast.Index { left; index } ->
+    let* left = eval_expr left env in
+    let* right = eval_expr index env in
+    (match left, right with
+     | Object.Array lst, Object.Integer int ->
+       (match List.nth lst int with
+        | Some obj -> Ok obj
+        | None -> Ok Object.Null)
+     | Array _, _ -> Error "not a valid array index"
+     | left, _ -> Fmt.error "not a valid list: %a" Object.pp left)
   | expr -> Fmt.error "unhandled expr: %s" (Ast.show_expression expr)
 
 and eval_bang right =
@@ -319,5 +365,44 @@ module Test = struct
   let%expect_test "fail with bad args" =
     expect_err "len(\"hello\", \"world\");";
     [%expect {| must only pass one arg to len |}]
+  ;;
+
+  let%expect_test "arrays" =
+    expect_int "len([1, 2 * 2, 3 + 3]);";
+    expect_int "[1, 2 * 2, 3 + 3][1 + 1];";
+    expect_int
+      {|
+      let a = [1, 2, 3, 4];
+      let b = push(a, 5);
+      b[4];
+    |};
+    expect_int
+      {|
+      let a = [1, 2, 3, 4];
+      let b = push(a, 5);
+      len(a);
+    |};
+    expect_int
+      {|
+      let map = fn(arr, f) {
+        let iter = fn(arr, accumulated) {
+          if (len(arr) == 0) {
+            accumulated
+          } else {
+            iter(rest(arr), push(accumulated, f(first(arr))));
+          }
+        };
+        iter(arr, []);
+      };
+      let a = [1, 2, 3];
+      let double = fn(x) { x * 2 };
+      map(a, double)[1];
+    |};
+    [%expect {|
+      3
+      6
+      5
+      4
+      4 |}]
   ;;
 end
