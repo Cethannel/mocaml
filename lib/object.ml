@@ -1,5 +1,3 @@
-open Base
-
 type 'a environment = 'a Environment.environment
 
 type t =
@@ -7,6 +5,7 @@ type t =
   | Boolean of bool
   | Return of t
   | Function of func
+  | Builtin of builtin
   | String of string
   | Null
 [@@deriving show { with_path = false }]
@@ -17,5 +16,9 @@ and func =
   ; env : t environment [@opaque]
   }
 
+and builtin = BuiltinFn of (t list -> (t, string) result)
+[@@deriving show { with_path = false }]
+
 let monkey_true = Boolean true
 let monkey_false = Boolean false
+let builtin_fn f = Builtin (BuiltinFn f)

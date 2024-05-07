@@ -13,12 +13,22 @@ let obj_is_truthy obj =
   | _ -> true
 ;;
 
+let builtins =
+  let open Object in
+  let env = Environment.init () in
+  Environment.set env "len"
+  @@ builtin_fn (function
+    | [ String str ] -> Ok (Integer (String.length str))
+    | args when List.length args > 1 -> Error "must only pass one arg to len"
+    | _ -> Fmt.error "bad type passed to len");
+  env
+;;
+
 let rec eval_input input =
   let lexer = Lexer.new_lex input in
   let parser = Parser.init lexer in
   let* program = Parser.parse parser |> map_error in
-  let env = Environment.init () in
-  eval program env
+  eval program builtins
 
 and eval node env =
   match node with
@@ -143,7 +153,7 @@ and eval_integer_infix operator left right =
 
 and eval_string_infix operator left right =
   match operator with
-  | Token.PLUS -> Ok ( Object.String ( left ^ right ) )
+  | Token.PLUS -> Ok (Object.String (left ^ right))
   | tok -> Fmt.error "unexpected string infix op: %a" Token.pp tok
 
 and eval_identifier identifier env =
@@ -157,6 +167,7 @@ and apply_function fn args =
     let env = extend_env fn args in
     let* evaluated = eval_block fn.body.block env in
     Ok (unwrap_return evaluated)
+  | Object.Builtin (BuiltinFn fn) -> fn args
   | obj -> Fmt.error "bad function: %a" Object.pp obj
 
 and extend_env fn args =
@@ -298,5 +309,15 @@ module Test = struct
     expect_str {|"Hello" + " " + "World!"|};
     [%expect {|
     Hello World! |}]
+  ;;
+
+  let%expect_test "builtin fns" =
+    expect_int "len(\"hello world\");";
+    [%expect {| 11 |}]
+  ;;
+
+  let%expect_test "fail with bad args" =
+    expect_err "len(\"hello\", \"world\");";
+    [%expect {| must only pass one arg to len |}]
   ;;
 end
