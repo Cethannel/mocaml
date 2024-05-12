@@ -443,7 +443,7 @@ module Test = struct
       true |}]
   ;;
 
-   let%expect_test "puts" =
+  let%expect_test "puts" =
     eval_input
       {|
       puts(5);
