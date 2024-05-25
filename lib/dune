@@ -1,6 +1,6 @@
 (library
  (name mocaml)
- (libraries base stdio ppx_deriving ppx_sexp_conv ppx_compare fmt)
+ (libraries base stdio ppx_deriving ppx_sexp_conv ppx_compare fmt stdint)
  (inline_tests)
  (preprocess
   (pps
@@ -11,4 +11,5 @@
    ppx_assert
    ppx_compare
    ppx_expect
-   ppx_deriving.ord)))
+   ppx_deriving.ord
+   ppx_deriving.enum)))
