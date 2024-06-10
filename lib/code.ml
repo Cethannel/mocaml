@@ -3,7 +3,7 @@ open Stdint
 
 let ( let@ ) res f = Base.Option.bind res ~f
 
-type t = OpConstant [@@deriving enum, show]
+type t = OpConstant [@@deriving enum, show, equal]
 type instructions = t list [@@deriving show]
 
 let to_byte enum = to_enum enum |> Uint8.of_int
